@@ -1,0 +1,10 @@
+flask
+faster-whisper
+pyautogui
+keyboard
+pycaw
+comtypes
+pyaudio
+pyperclip
+deep-translator
+pyttsx3

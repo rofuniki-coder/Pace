@@ -1,0 +1,13 @@
+node_modules
+venv/
+__pycache__/
+*.pyc
+distribution/
+dist/
+build/
+*.spec
+python_dist/
+UserData/
+.env
+.DS_Store
+*.log

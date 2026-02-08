@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pace</title>
+    <!-- Supabase SDK Removed -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+        
+        :root {
+            --bg: #ffffff;
+            --sidebar-bg: #fbfbfb;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --border: #e4e4e7;
+            --accent: #18181b;
+            --card-bg: #fafafa; /* Changed from #FFFFF0 (Ivory/Yellowish) to neutral */
+            --hover-bg: #f4f4f5;
+            --danger: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --bg: #18181b;
+            --sidebar-bg: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --border: #3f3f46;
+            --accent: #f4f4f5;
+            --card-bg: #27272a;
+            --hover-bg: #3f3f46;
+            --danger: #ef4444;
+        }
+
+        [data-theme="pink"] {
+            --bg: #fff1f2; /* Rose-50 */
+            --sidebar-bg: #ffe4e6; /* Rose-100 */
+            --text-main: #881337; /* Rose-900 */
+            --text-muted: #be123c; /* Rose-700 */
+            --border: #fecdd3; /* Rose-200 */
+            --accent: #e11d48; /* Rose-600 */
+            --card-bg: #ffffff;
+            --hover-bg: #fda4af; /* Rose-300 */
+            --danger: #9f1239;
+        }
+
+        /* Hide Scrollbars Globally */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent; /* Transparent for rounded corners */
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Main Window Wrapper for Rounded Corners */
+        .window-wrapper {
+            background: var(--bg);
+            width: 100%;
+            height: 100%;
+            border-radius: 16px; /* Increased radius for modern look */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        /* Title Bar */
+        .title-bar {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            -webkit-app-region: drag;
+            border-bottom: 1px solid transparent;
+            background: var(--bg);
+            flex-shrink: 0;
+        }
+
+        .title-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-toggle {
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            -webkit-app-region: no-drag;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .sidebar-toggle:hover { color: var(--text-main); }
+
+        .app-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+        }
+
+        .control-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: background 0.2s;
+        }
+        .control-btn:hover { background: var(--hover-bg); color: var(--text-main); }
+        .control-btn.close:hover { background: #fee2e2; color: #ef4444; }
+
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden; /* Prevent body scroll */
+        }
+
+        /* Sidebar */
+        aside {
+            width: 240px;
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            box-sizing: border-box;
+            transition: margin-left 0.3s ease;
+            -webkit-app-region: no-drag;
+        }
+
+        aside.hidden {
+            margin-left: -240px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 32px;
+            padding-left: 12px;
+        }
+        
+        .badge {
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            background: var(--hover-bg);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: var(--hover-bg);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .nav-item svg { width: 18px; height: 18px; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* Views */
+        .view-content {
+            flex: 1;
+            padding: 40px 60px;
+            overflow-y: auto;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .view-content.active-view {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0.9; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Home View Styles */
+        header { margin-bottom: 40px; }
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin: 0 0 24px 0;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .stat strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .hero-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin: 0 0 8px 0;
+            font-style: italic;
+        }
+
+        .hero-content p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -29px;
+            top: 4px;
+            width: 9px;
+            height: 9px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+        }
+
+        .timeline-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .timeline-content {
+            background: var(--hover-bg);
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .timeline-content:hover {
+            background: var(--card-bg); /* Use variable instead of hardcoded #ededed */
+            border: 1px solid var(--border); /* Add border for better definition */
+        }
+
+        /* Notes View Styles */
+        .notes-layout {
+            display: flex;
+            gap: 24px;
+            height: 100%;
+        }
+
+        .notes-list {
+            width: 250px;
+            border-right: 1px solid var(--border);
+            padding-right: 24px;
+            overflow-y: auto;
+        }
+
+        .note-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .note-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .note-item:hover { background: var(--hover-bg); }
+        .note-item.active { 
+            background: var(--card-bg); /* Use variable instead of white */
+            border-color: var(--border); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+        }
+        
+        .note-item-title { font-weight: 600; margin-bottom: 4px; font-size: 0.95rem; padding-right: 20px; }
+        .note-item-preview { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .note-delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0;
+            color: var(--text-muted);
+            transition: opacity 0.2s, color 0.2s;
+        }
+        .note-item:hover .note-delete-btn { opacity: 1; }
+        .note-delete-btn:hover { color: var(--danger); }
+
+        .editor-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            border: none;
+            outline: none;
+            width: 100%;
+            margin-bottom: 16px;
+            background: transparent;
+        }
+
+        .editor-content {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            background: transparent;
+        }
+        
+        .btn-new-note {
+            width: 100%;
+            padding: 10px;
+            background: var(--text-main);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-new-note:hover { opacity: 0.9; }
+
+        /* Modals (Settings & Help) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            -webkit-app-region: no-drag;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal {
+            background: var(--bg);
+            padding: 32px;
+            border-radius: 16px;
+            width: 450px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            animation: slideUp 0.2s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal h3 { margin: 0 0 24px 0; font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500; color: var(--text-main); }
+        
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .form-group select:focus, .form-group input:focus { border-color: var(--text-main); outline: none; }
+        
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; }
+        .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; border: none; font-weight: 500; }
+        .btn-secondary { background: var(--hover-bg); color: var(--text-main); }
+        .btn-primary { background: var(--text-main); color: white; }
+        
+        .btn-icon {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-icon:hover { background: var(--hover-bg); }
+
+        .help-section { margin-bottom: 24px; }
+        .help-section h4 { margin: 0 0 8px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .help-section p { margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+
+        /* Switch Toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0; /* Prevent squashing in flex containers */
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--text-main);
+        }
+        
+        /* Ensure circle color contrasts with the slider background in all themes */
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: var(--bg);
+        }
+
+        /* Formatting Selector */
+        .format-selector {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .format-option {
+            flex: 1;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: var(--bg);
+        }
+        
+        .format-option:hover {
+            background: var(--hover-bg);
+            border-color: var(--text-muted);
+        }
+        
+        .format-option.selected {
+            border: 2px solid var(--text-main);
+            background: var(--card-bg);
+        }
+        
+        .format-option h5 { margin: 0; font-size: 1rem; font-weight: 600; }
+        .format-option p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+
+        .btn.btn-in-use {
+            background: #dcfce7;
+            color: #166534;
+            cursor: default;
+            border: 1px solid #bbf7d0;
+        }
+
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            -webkit-app-region: no-drag;
+            backdrop-filter: blur(2px);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="window-wrapper">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="sidebar-toggle" id="toggle-sidebar" title="Toggle Sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                </div>
+                
+                <!-- Login Button Removed -->
+
+                <div class="app-title" style="margin-left: 8px; display: flex; align-items: center; gap: 8px;">
+                    <img src="logotransparent.png" alt="Pace Logo" style="width: 18px; height: 18px; object-contain: contain;">
+                    Pace
+                </div>
+            </div>
+            <div class="window-controls">
+                <div class="control-btn" id="btn-min"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+                <div class="control-btn" id="btn-max"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg></div>
+                <div class="control-btn close" id="btn-close"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+            </div>
+        </div>
+
+        <div class="app-container">
+            <!-- Sidebar -->
+            <aside id="sidebar">
+                <div class="logo">
+                    <img src="logotransparent.png" alt="Pace Logo" style="width: 24px; height: 24px; object-contain: contain;">
+                    Pace
+                </div>
+
+                <nav>
+                    <div class="nav-item active" data-view="home">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        Home
+                    </div>
+                    <div class="nav-item" data-view="notes">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Notes
+                    </div>
+                    <div class="nav-item" data-view="models">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        Models
+                    </div>
+                </nav>
+
+                <div class="sidebar-card" style="margin-top: auto; margin-bottom: 16px; background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+                    <h5 style="margin: 0 0 8px 0; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                        Support Pace <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    </h5>
+                    <p style="margin: 0 0 12px 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                        Pace is open source and free. If you enjoy using it, consider supporting its development!
+                    </p>
+                    <button onclick="require('electron').shell.openExternal('https://www.paypal.com/paypalme/brenddono')" 
+                        style="width: 100%; padding: 8px; background: var(--text-main); color: var(--bg); border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.946 5.05-3.691 6.167-8.331 6.167h-.708l-.5 3.141c-.08.502-.512.878-1.018.878H7.72l-.644 4.617z"/></svg>
+                        Donate
+                    </button>
+                </div>
+
+                <div class="sidebar-footer">
+                    <div class="nav-item" id="open-settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        Settings
+                    </div>
+                    <div class="nav-item" id="open-help">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        Help & Feedback
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Home View -->
+            <div class="view-content active-view" id="view-home">
+                <header>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h1 style="margin: 0;">Welcome back</h1>
+                        <button id="theme-toggle" class="btn btn-secondary" style="padding: 8px 12px; display: flex; align-items: center; gap: 8px;">
+                            <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="5"></circle>
+                                <line x1="12" y1="1" x2="12" y2="3"></line>
+                                <line x1="12" y1="21" x2="12" y2="23"></line>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                <line x1="1" y1="12" x2="3" y2="12"></line>
+                                <line x1="21" y1="12" x2="23" y2="12"></line>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                            </svg>
+                            <span id="theme-text">Light</span>
+                        </button>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat">
+                            <!-- Clean Clock Icon -->
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <strong id="stat-days">0</strong> days
+                        </div>
+                        <div class="stat">
+                            <!-- Clean File Icon -->
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <strong id="stat-words">0</strong> words
+                        </div>
+                        <div class="stat">
+                            <!-- Clean Activity Icon -->
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            <strong id="stat-wpm">0</strong> WPM
+                        </div>
+                    </div>
+                </header>
+
+                <div class="hero-card">
+                    <div class="hero-content">
+                        <h2>Hold Ctrl+Alt to dictate</h2>
+                        <p>Or use the floating bar to start recording anytime.</p>
+                    </div>
+                </div>
+
+                <div class="timeline" id="history-list">
+                    <!-- History Items will be injected here -->
+                    <div style="padding: 20px; color: var(--text-muted);">No history yet. Start recording!</div>
+                </div>
+            </div>
+
+            <!-- Models View -->
+            <div class="view-content" id="view-models">
+                <h1>Models</h1>
+                <div class="hero-card" style="margin-bottom: 24px; padding: 24px;">
+                    <div class="hero-content">
+                        <h2>Select a Model</h2>
+                        <p>Choose the model size that fits your needs. Larger models are more accurate but require more resources.</p>
+                    </div>
+                </div>
+
+                <div class="models-grid" id="models-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px;">
+                    <!-- Model Cards injected via JS -->
+                </div>
+
+                <h2>Formatting</h2>
+                <div class="hero-card" style="padding: 24px;">
+                    <div class="format-selector">
+                        <div class="format-option" id="fmt-raw" onclick="setFormattingMode('raw')">
+                            <h5>Raw Text</h5>
+                            <p>Lowercase, no punctuation. Good for chat.</p>
+                        </div>
+                        <div class="format-option" id="fmt-standard" onclick="setFormattingMode('standard')">
+                            <h5>Smart Formatting</h5>
+                            <p>Capitalization & punctuation. Good for docs.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h5 style="margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                Smart Polish <span class="badge" style="background: var(--text-main); color: var(--bg); border: none;">BETA</span>
+                            </h5>
+                            <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+                                Auto-removes fillers and fixes self-corrections (e.g., "meet at 3... nvm meet at 5" &rarr; "meet at 5").
+                            </p>
+                        </div>
+                        <label class="switch" id="smart-polish-label">
+                            <input type="checkbox" id="smart-polish-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h5 style="margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                Brainrot Mode <span class="badge" style="background: linear-gradient(45deg, #FF0080, #7928CA); color: white; border: none;">LIT</span>
+                            </h5>
+                            <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+                                Transforms your text into Gen Z slang. Fr fr no cap. 💀
+                            </p>
+                        </div>
+                        <label class="switch" id="gen-z-label">
+                            <input type="checkbox" id="gen-z-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes View -->
+            <div class="view-content" id="view-notes">
+                <div class="notes-layout">
+                    <div class="notes-list">
+                        <button class="btn-new-note" id="btn-create-note">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            New Note
+                        </button>
+                        <div id="notes-container">
+                            <!-- Note items here -->
+                        </div>
+                    </div>
+                    <div class="note-editor" id="note-editor" style="display:none;">
+                        <input type="text" class="editor-title" id="note-title" placeholder="Note Title">
+                        <textarea class="editor-content" id="note-body" placeholder="Start typing..."></textarea>
+                    </div>
+                    <div class="note-editor" id="no-note-selected" style="display:flex; align-items:center; justify-content:center; color: var(--text-muted);">
+                        Select or create a note
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <h3>Settings</h3>
+            <div class="form-group">
+                <label>Microphone Device</label>
+                <div class="input-group">
+                    <select id="mic-select">
+                        <option value="">Default Device</option>
+                    </select>
+                    <div class="btn-icon" id="refresh-mics" title="Refresh Devices">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Source Language</label>
+                <select id="lang-select">
+                    <option value="auto">Auto Detect</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ja">Japanese</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Record Shortcut</label>
+                <input type="text" value="Ctrl + Alt" disabled style="opacity: 0.7">
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">Currently fixed</small>
+            </div>
+            
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="close-settings">Cancel</button>
+                <button class="btn btn-primary" id="save-settings">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal" style="width: 500px;">
+            <h3>Help & Feedback</h3>
+            
+            <div class="help-section" style="background: var(--hover-bg); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <h4 style="color: var(--text-main); margin-bottom: 12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    How to Use
+                </h4>
+                <div style="display: grid; gap: 8px;">
+                    <div style="display: flex; gap: 8px; align-items: start;">
+                        <span style="background: var(--text-main); color: var(--bg); width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; margin-top: 2px;">1</span>
+                        <p style="margin: 0;"><strong>Record:</strong> Click the floating bar.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: start;">
+                        <span style="background: var(--text-main); color: var(--bg); width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; margin-top: 2px;">2</span>
+                        <p style="margin: 0;"><strong>Dictate:</strong> Hold <code>Ctrl+Alt</code> to type anywhere.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: start;">
+                        <span style="background: var(--text-main); color: var(--bg); width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; margin-top: 2px;">3</span>
+                        <p style="margin: 0;"><strong>History:</strong> Saved automatically to Home.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-section" style="background: var(--hover-bg); padding: 16px; border-radius: 8px;">
+                <h4 style="color: var(--text-main); margin-bottom: 12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    Tips
+                </h4>
+                <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                    <li style="margin-bottom: 4px;">Keep microphone clear of obstructions.</li>
+                    <li style="margin-bottom: 4px;">Speak clearly for best accuracy.</li>
+                    <li>Right-click the floating bar for quick options.</li>
+                </ul>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="shell.openExternal('mailto:support@rypace.dev')">Contact Support</button>
+                <button class="btn btn-primary" id="close-help">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer, clipboard, shell } = require('electron');
+
+        // --- Logic: Window Controls ---
+        document.getElementById('btn-min').addEventListener('click', () => ipcRenderer.send('minimize-window'));
+        document.getElementById('btn-max').addEventListener('click', () => ipcRenderer.send('maximize-window'));
+        document.getElementById('btn-close').addEventListener('click', () => ipcRenderer.send('close-window'));
+
+        // --- Logic: Donation ---
+        // Handled by AuthManager below
+
+        // --- Logic: Sidebar Toggle ---
+        const sidebar = document.getElementById('sidebar');
+        document.getElementById('toggle-sidebar').addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+        });
+
+        // --- Logic: Login Button ---
+        // Moved to AuthManager
+
+        // --- Logic: Deep Link Auth ---
+        // Moved to AuthManager
+
+        // --- Logic: Restore Session on Startup ---
+        // Moved to AuthManager
+
+        // --- Logic: Reset Status Button (Removed) ---
+
+        // --- Theme Logic ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        
+        // Theme Cycle: Light -> Dark -> Pink -> Light
+        const themes = ['light', 'dark', 'pink'];
+        let currentTheme = localStorage.getItem('theme') || 'light';
+
+        // Apply initial theme
+        applyTheme(currentTheme);
+
+        function applyTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            
+            // Update Logo based on theme
+            const logoElements = document.querySelectorAll('.app-title img, .logo img');
+            const newLogoSrc = theme === 'dark' ? 'logotransparent.png' : 'logo-light.png';
+            logoElements.forEach(img => {
+                img.src = newLogoSrc;
+            });
+            
+            // Update UI Text & Icon
+            if (theme === 'dark') {
+                themeText.textContent = 'Dark';
+                themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else if (theme === 'pink') {
+                themeText.textContent = 'Pink';
+                // Heart Icon
+                themeIcon.innerHTML = '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>';
+            } else {
+                themeText.textContent = 'Light';
+                themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentIndex = themes.indexOf(currentTheme);
+            const nextIndex = (currentIndex + 1) % themes.length;
+            currentTheme = themes[nextIndex];
+            
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        });
+
+        // --- Logic: View Navigation ---
+        const navItems = document.querySelectorAll('.nav-item[data-view]');
+        const views = document.querySelectorAll('.view-content');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Update active nav
+                navItems.forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+
+                // Update active view
+                const viewId = item.getAttribute('data-view');
+                views.forEach(v => v.classList.remove('active-view'));
+                document.getElementById('view-' + viewId).classList.add('active-view');
+            });
+        });
+
+        // --- Logic: Settings Modal ---
+        const modal = document.getElementById('settings-modal');
+        const helpModal = document.getElementById('help-modal');
+        const micSelect = document.getElementById('mic-select');
+        const langSelect = document.getElementById('lang-select');
+        let currentInputDevice = null;
+
+        document.getElementById('open-settings').addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+
+        document.getElementById('close-settings').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        document.getElementById('open-help').addEventListener('click', () => {
+            helpModal.style.display = 'flex';
+        });
+
+        document.getElementById('close-help').addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+        
+        // Close on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+            if (e.target === helpModal) helpModal.style.display = 'none';
+        });
+
+        document.getElementById('save-settings').addEventListener('click', () => {
+            const newConfig = {
+                input_device_index: micSelect.value ? parseInt(micSelect.value) : null,
+                source_language: langSelect.value
+            };
+            
+            fetch('http://127.0.0.1:5000/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newConfig)
+            });
+            
+            modal.style.display = 'none';
+        });
+        
+
+        document.getElementById('refresh-mics').addEventListener('click', () => {
+             fetch('http://127.0.0.1:5000/devices')
+            .then(res => res.json())
+            .then(devices => {
+                updateDeviceList(devices);
+            });
+        });
+
+        // --- Logic: Notes App ---
+        let notes = JSON.parse(localStorage.getItem('pace_notes') || '[]');
+        let activeNoteId = null;
+
+        const notesContainer = document.getElementById('notes-container');
+        const noteTitleInput = document.getElementById('note-title');
+        const noteBodyInput = document.getElementById('note-body');
+        const noteEditor = document.getElementById('note-editor');
+        const noNoteSelected = document.getElementById('no-note-selected');
+
+        function renderNotesList() {
+            notesContainer.innerHTML = '';
+            notes.forEach(note => {
+                const el = document.createElement('div');
+                el.className = `note-item ${note.id === activeNoteId ? 'active' : ''}`;
+                
+                // Trash Icon
+                const trashBtn = document.createElement('div');
+                trashBtn.className = 'note-delete-btn';
+                trashBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+                trashBtn.onclick = (e) => {
+                    e.stopPropagation(); // Prevent selection
+                    deleteNote(note.id);
+                };
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = `
+                    <div class="note-item-title">${note.title || 'Untitled Note'}</div>
+                    <div class="note-item-preview">${note.body || 'No content'}</div>
+                `;
+                
+                el.appendChild(contentDiv);
+                el.appendChild(trashBtn);
+                
+                el.onclick = () => loadNote(note.id);
+                notesContainer.appendChild(el);
+            });
+        }
+        
+        function deleteNote(id) {
+            if(confirm('Are you sure you want to delete this note?')) {
+                notes = notes.filter(n => n.id !== id);
+                localStorage.setItem('pace_notes', JSON.stringify(notes));
+                if (activeNoteId === id) {
+                    activeNoteId = null;
+                    noteEditor.style.display = 'none';
+                    noNoteSelected.style.display = 'flex';
+                }
+                renderNotesList();
+            }
+        }
+
+        function loadNote(id) {
+            activeNoteId = id;
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                noteTitleInput.value = note.title;
+                noteBodyInput.value = note.body;
+                noteEditor.style.display = 'flex';
+                noNoteSelected.style.display = 'none';
+                renderNotesList();
+            }
+        }
+
+        function saveActiveNote() {
+            if (!activeNoteId) return;
+            const note = notes.find(n => n.id === activeNoteId);
+            if (note) {
+                note.title = noteTitleInput.value;
+                note.body = noteBodyInput.value;
+                note.updatedAt = Date.now();
+                localStorage.setItem('pace_notes', JSON.stringify(notes));
+                // Update list title only if changed
+                renderNotesList(); 
+            }
+        }
+
+        document.getElementById('btn-create-note').addEventListener('click', () => {
+            const newNote = {
+                id: Date.now().toString(),
+                title: '',
+                body: '',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            notes.unshift(newNote);
+            localStorage.setItem('pace_notes', JSON.stringify(notes));
+            loadNote(newNote.id);
+        });
+
+        noteTitleInput.addEventListener('input', saveActiveNote);
+        noteBodyInput.addEventListener('input', saveActiveNote);
+
+        renderNotesList();
+
+
+        // --- Logic: Models & Formatting ---
+        const modelsGrid = document.getElementById('models-grid');
+        let currentModel = "tiny.en";
+        let modelStatus = "ready";
+        let downloadProgress = 0;
+        let pollingInterval = null;
+        let downloadedModels = [];
+
+        const AVAILABLE_MODELS = [
+            { id: "tiny.en", name: "Tiny (English)", size: "75MB", desc: "Fastest, low resource usage." },
+            { id: "base.en", name: "Base (English)", size: "145MB", desc: "Balanced speed and accuracy." },
+            { id: "small.en", name: "Small (English)", size: "460MB", desc: "Better accuracy, slightly slower." },
+            { id: "medium.en", name: "Medium (English)", size: "1.5GB", desc: "High accuracy, requires more RAM." },
+            { id: "large-v3", name: "Large v3", size: "3GB", desc: "Best accuracy, requires powerful CPU/GPU." }
+        ];
+
+        function fetchDownloadedModels() {
+            fetch('http://127.0.0.1:5000/downloaded_models')
+                .then(res => res.json())
+                .then(data => {
+                    downloadedModels = data;
+                    renderModels();
+                })
+                .catch(console.error);
+        }
+
+        function renderModels() {
+            modelsGrid.innerHTML = '';
+            AVAILABLE_MODELS.forEach(m => {
+                const isCurrent = currentModel === m.id;
+                const isDownloaded = downloadedModels.includes(m.id);
+                
+                const card = document.createElement('div');
+                card.className = 'hero-card';
+                card.style.marginBottom = '0';
+                card.style.padding = '20px';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
+                card.style.justifyContent = 'space-between';
+                card.style.border = isCurrent ? '2px solid var(--text-main)' : '1px solid transparent';
+                
+                let btnText = "Download";
+                let btnClass = "btn btn-secondary";
+                let btnDisabled = false;
+                
+                if (isCurrent) {
+                    if (modelStatus === "downloading") {
+                        btnText = `Downloading ${downloadProgress}%`;
+                        btnDisabled = true;
+                    } else if (modelStatus === "loading") {
+                        btnText = "Loading...";
+                        btnDisabled = true;
+                    } else {
+                        btnText = "In Use";
+                        btnClass = "btn btn-in-use";
+                        btnDisabled = true;
+                    }
+                } else {
+                    if (isDownloaded) {
+                        btnText = "Activate";
+                        btnClass = "btn btn-primary";
+                    } else {
+                        btnText = "Download";
+                        btnClass = "btn btn-secondary";
+                    }
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem;">${m.name}</h3>
+                        <p style="margin: 0 0 16px 0; font-size: 0.85rem; color: var(--text-muted);">${m.desc} (${m.size})</p>
+                    </div>
+                    <button class="${btnClass}" ${btnDisabled ? 'disabled' : ''} onclick="selectModel('${m.id}')">${btnText}</button>
+                `;
+                modelsGrid.appendChild(card);
+            });
+        }
+
+        window.selectModel = function(modelId) {
+            if (currentModel === modelId) return;
+            
+            const isDownloaded = downloadedModels.includes(modelId);
+            const action = isDownloaded ? "Activate" : "Download & Use";
+            
+            if (confirm(`${action} ${modelId}?`)) {
+                fetch('http://127.0.0.1:5000/download_model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_size: modelId })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (isDownloaded) {
+                        currentModel = modelId;
+                        modelStatus = "loading";
+                        renderModels();
+                    }
+                });
+            }
+        };
+
+        window.setFormattingMode = function(mode) {
+            document.querySelectorAll('.format-option').forEach(el => el.classList.remove('selected'));
+            const el = document.getElementById('fmt-' + mode);
+            if (el) el.classList.add('selected');
+            
+            fetch('http://127.0.0.1:5000/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ formatting_mode: mode })
+            });
+        };
+
+        const smartPolishToggle = document.getElementById('smart-polish-toggle');
+        smartPolishToggle.addEventListener('change', (e) => {
+            fetch('http://127.0.0.1:5000/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ smart_polish: e.target.checked })
+            });
+        });
+
+        const genZToggle = document.getElementById('gen-z-toggle');
+        genZToggle.addEventListener('change', (e) => {
+            fetch('http://127.0.0.1:5000/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gen_z_mode: e.target.checked })
+            });
+        });
+
+        function updateModelStatus() {
+            fetch('http://127.0.0.1:5000/model_status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.current_model) currentModel = data.current_model;
+                    modelStatus = data.status;
+                    downloadProgress = data.progress;
+                    fetchDownloadedModels(); // Keep synced
+                })
+                .catch(err => console.error("Model status error:", err));
+        }
+
+
+        // --- Logic: Data & Updates ---
+        
+        ipcRenderer.on('config-updated', (event, config) => {
+            console.log("Config updated via IPC:", config);
+            updateUIFromConfig(config);
+        });
+
+        ipcRenderer.on('update-devices', (event, devices) => {
+            updateDeviceList(devices);
+        });
+        
+        function updateUIFromConfig(config) {
+            // 1. Update History & Stats
+            if (config.history) {
+                renderHistory(config.history);
+                calculateStats(config.history);
+            }
+            
+            // 2. Update Settings UI state
+            if (config.source_language) {
+                langSelect.value = config.source_language;
+            }
+            
+            // 3. Update Formatting UI
+            if (config.formatting_mode) {
+                document.querySelectorAll('.format-option').forEach(el => el.classList.remove('selected'));
+                const el = document.getElementById('fmt-' + config.formatting_mode);
+                if (el) el.classList.add('selected');
+            }
+            if (config.smart_polish !== undefined) {
+                smartPolishToggle.checked = config.smart_polish;
+            }
+            if (config.gen_z_mode !== undefined) {
+                const genZToggle = document.getElementById('gen-z-toggle');
+                if (genZToggle) genZToggle.checked = config.gen_z_mode;
+            }
+            
+            // 4. Update Model
+            if (config.model_size) {
+                currentModel = config.model_size;
+                renderModels();
+            }
+        }
+        
+        function updateDeviceList(devices) {
+             console.log("Devices updated:", devices);
+            micSelect.innerHTML = '<option value="">Default Device</option>';
+            devices.forEach(d => {
+                const option = document.createElement('option');
+                option.value = d.index;
+                option.text = d.name;
+                if (currentInputDevice === d.index) option.selected = true;
+                micSelect.appendChild(option);
+            });
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('history-list');
+            if (!history || history.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">No history yet. Start recording!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            // Show Newest First (Top)
+            // Server sends newest at index 0 ([New, Old, Oldest])
+            // Iterating and appending -> New is Top, Old is Bottom.
+            
+            history.forEach(item => {
+                const text = typeof item === 'string' ? item : item.text;
+                // Handle timestamp
+                let dateStr = "Recently";
+                let fullDateStr = "Recently";
+                
+                if (typeof item !== 'string' && item.timestamp) {
+                    const dateObj = new Date(item.timestamp * 1000);
+                    dateStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    fullDateStr = dateObj.toLocaleDateString() + ' ' + dateStr;
+                }
+                
+                const el = document.createElement('div');
+                el.className = 'timeline-item';
+                
+                el.innerHTML = `
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-date" title="${fullDateStr}">${dateStr}</div>
+                    <div class="timeline-content" title="Click to copy">${text}</div>
+                `;
+                
+                // Copy on click
+                el.querySelector('.timeline-content').addEventListener('click', () => {
+                    clipboard.writeText(text);
+                });
+                
+                container.appendChild(el);
+            });
+        }
+
+        function calculateStats(history) {
+            if (!history) return;
+            
+            const totalItems = history.length;
+            
+            // Words
+            const totalWords = history.reduce((acc, item) => {
+                const text = typeof item === 'string' ? item : item.text;
+                return acc + (text ? text.split(/\s+/).length : 0);
+            }, 0);
+            
+            // Days (Unique dates)
+            const uniqueDays = new Set();
+            history.forEach(item => {
+                if (typeof item !== 'string' && item.timestamp) {
+                    const date = new Date(item.timestamp * 1000);
+                    uniqueDays.add(date.toDateString());
+                }
+            });
+            // If legacy data (strings), count as at least 1 day if items exist
+            const daysCount = uniqueDays.size || (totalItems > 0 ? 1 : 0);
+            
+            // WPM (Words / Minutes)
+            // Only count items that have valid duration
+            let totalWpmWords = 0;
+            let totalDurationMin = 0;
+            
+            history.forEach(item => {
+                if (typeof item !== 'string' && item.duration > 0) {
+                     const text = item.text || "";
+                     const words = text.split(/\s+/).length;
+                     totalWpmWords += words;
+                     totalDurationMin += (item.duration / 60);
+                }
+            });
+            
+            let avgWpm = 0;
+            if (totalDurationMin > 0) {
+                avgWpm = Math.round(totalWpmWords / totalDurationMin);
+            }
+            
+            document.getElementById('stat-days').innerText = daysCount;
+            document.getElementById('stat-words').innerText = totalWords.toLocaleString();
+            document.getElementById('stat-wpm').innerText = avgWpm;
+        }
+        
+        // Initial Config Fetch
+        function loadConfig() {
+            fetch('http://127.0.0.1:5000/config')
+                .then(res => res.json())
+                .then(config => {
+                    updateUIFromConfig(config);
+                })
+                .catch(console.error);
+        }
+
+        // Fetch devices on load
+        fetch('http://127.0.0.1:5000/devices')
+            .then(res => res.json())
+            .then(devices => {
+                updateDeviceList(devices);
+            })
+            .catch(console.error);
+
+        loadConfig();
+        fetchDownloadedModels();
+
+        // Polling for Real-time Updates (every 2s)
+        setInterval(() => {
+            loadConfig();
+            updateModelStatus();
+            
+        }, 2000);
+    </script>
+</body>
+</html>

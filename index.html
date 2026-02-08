@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pace</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+        
+        :root {
+            --bg: #ffffff;
+            --sidebar-bg: #fbfbfb;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --border: #e4e4e7;
+            --accent: #18181b;
+            --card-bg: #FFFFF0; /* Light yellow for the hero card */
+            --hover-bg: #f4f4f5;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            overflow: hidden;
+            user-select: none;
+            -webkit-app-region: drag; /* Allow dragging by default */
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 240px;
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            box-sizing: border-box;
+            -webkit-app-region: drag;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 32px;
+            padding-left: 12px;
+        }
+        
+        .badge {
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            -webkit-app-region: no-drag;
+        }
+
+        .nav-item:hover {
+            background: var(--hover-bg);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: var(--hover-bg);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+        }
+
+        .sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 40px 60px;
+            overflow-y: auto;
+            background: var(--bg);
+            -webkit-app-region: no-drag; /* Content area scrollable */
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Hero Card */
+        .hero-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 16px;
+            color: #2c2c2c;
+        }
+        
+        .hero-title span {
+            font-weight: 600;
+        }
+
+        .hero-desc {
+            color: #52525b;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 24px auto;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: #18181b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* Timeline */
+        .timeline-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .date-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #a1a1aa;
+            margin: 32px 0 16px 0;
+            font-weight: 600;
+        }
+
+        .history-item {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 24px;
+            background: white;
+            transition: box-shadow 0.2s;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .timestamp {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            min-width: 70px;
+            padding-top: 2px;
+        }
+
+        .content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #3f3f46;
+        }
+
+        /* Floating Overlay Styles (PRESERVED) */
+        body.overlay-mode {
+            background: transparent;
+        }
+        body.overlay-mode .app-container {
+            display: none;
+        }
+        
+        #overlay-pill {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8); /* Darker for contrast */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+            padding: 6px 16px;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            /* box-shadow: 0 8px 32px rgba(0,0,0,0.3); Removed per user request */
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.8rem;
+            max-width: 260px;
+            overflow: hidden;
+            -webkit-app-region: no-drag;
+            z-index: 9999;
+        }
+        
+        body.overlay-mode #overlay-pill {
+            display: flex;
+        }
+        
+        /* Processing State Animation */
+        @keyframes borderPulse {
+             0% { border-color: rgba(124, 58, 237, 0.3); box-shadow: 0 0 5px rgba(124, 58, 237, 0.2); }
+             50% { border-color: rgba(124, 58, 237, 0.8); box-shadow: 0 0 15px rgba(124, 58, 237, 0.5); }
+             100% { border-color: rgba(124, 58, 237, 0.3); box-shadow: 0 0 5px rgba(124, 58, 237, 0.2); }
+        }
+
+        #overlay-pill.processing {
+            animation: borderPulse 1.5s infinite;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #a78bfa;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #a78bfa;
+            flex-shrink: 0;
+        }
+        
+        .recording .dot {
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+            display: none;
+        }
+
+        /* Hover Hint */
+        #hover-hint {
+            display: none;
+            color: #d4d4d8;
+            font-size: 0.8rem;
+            margin-left: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        #overlay-pill:hover {
+            background: rgba(0, 0, 0, 0.9);
+            padding-right: 24px;
+        }
+
+        /* Auto-transparency when idle */
+        #overlay-pill.fade-out {
+            opacity: 0.3;
+            background: rgba(0, 0, 0, 0.4);
+            transition: opacity 0.5s ease, background 0.5s ease;
+        }
+        #overlay-pill.fade-out:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        #overlay-pill:hover #status-text {
+            display: none;
+        }
+
+        #overlay-pill:hover #hover-hint {
+            display: inline;
+            opacity: 1;
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Settings Styles */
+        .settings-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+        }
+        .status-msg {
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        .status-msg.success { color: #10b981; }
+        .status-msg.error { color: #ef4444; }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        .setting-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .setting-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .path-input {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 250px;
+            font-family: inherit;
+            font-size: 0.85rem;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e4e4e7;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #18181b;
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(16px);
+            -ms-transform: translateX(16px);
+            transform: translateX(16px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main App UI -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside>
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M2 12h20M12 2l10 10-10 10-10-10 10-10z"/>
+                </svg>
+                Flow <span class="badge">Basic</span>
+            </div>
+
+            <nav>
+                <div class="nav-item active" id="nav-home">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Home
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    Dictionary
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    Snippets
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    Notes
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Invite your team
+                </div>
+                <div class="nav-item" id="nav-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    Settings
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Help
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <div id="home-view">
+                <header>
+                    <h1>Welcome back, ROFUNIKI</h1>
+                    <div class="stats">
+                        <div class="stat-item">🔥 4 weeks</div>
+                        <div class="stat-item">🚀 25.1K words</div>
+                        <div class="stat-item">🏆 177 WPM</div>
+                    </div>
+                </header>
+
+                <div class="hero-card">
+                    <div class="hero-title">Hold <span>Ctrl+Alt</span> to dictate and let Flow format for you</div>
+                    <div class="hero-desc">
+                        Press and hold <b>Ctrl+Alt</b> to dictate in any app. Flow's <b>Smart Formatting</b> and <b>Backtrack</b> will handle punctuation, new lines, lists, and adjust when you change your mind mid-sentence.
+                    </div>
+                    <button class="btn-primary">Show me how</button>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="date-header">January 15, 2026</div>
+                    <div class="history-item">
+                        <div class="timestamp">12:11 AM</div>
+                        <div class="content">Hey, how are you doing? Is everything all right?</div>
+                    </div>
+
+                    <div class="date-header">January 13, 2026</div>
+                    <div class="history-item">
+                        <div class="timestamp">10:36 PM</div>
+                        <div class="content">Nice, now the code is fully broken. So nice, thank you so much! The UI is broken when the small floating thing loads. There was like "shit" load with its next to it, and when I open the menu, it's really bad bro. Make something fancy without breaking the floating thing. The floating thing should not be edited at all.</div>
+                    </div>
+                    <div class="history-item">
+                        <div class="timestamp">08:43 PM</div>
+                        <div class="content">also, if it's possible, can we add a right-click menu? Like, when you right-click on this thing, a little pop-up appears, and you're like, "Hide for 1 hour" or other features that I'm gonna tell you now.</div>
+                    </div>
+                    <div class="history-item">
+                        <div class="timestamp">07:53 PM</div>
+                        <div class="content">Ok, new one. We're going to try to remake this one that I'm going to give you</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" style="display: none;">
+                <header>
+                    <h1>Settings</h1>
+                </header>
+                
+                <!-- Features Section -->
+                <div class="settings-card" id="features-card">
+                    <h3>Features</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Smart Polish</span>
+                            <span class="setting-desc">Use AI to polish your text (grammar, tone)</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="smart-polish-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span style="display: flex; align-items: center; gap: 8px;">Brainrot Mode <span class="badge" style="background: linear-gradient(45deg, #FF0080, #7928CA); color: white; border: none; font-size: 0.6rem; padding: 1px 6px;">LIT</span></span>
+                            <span class="setting-desc">Transforms your text into Gen Z slang. Fr fr no cap. 💀</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="gen-z-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Support Flow</span>
+                            <span class="setting-desc">Love the app? Consider supporting the development!</span>
+                        </div>
+                        <button class="btn-secondary" onclick="require('electron').shell.openExternal('https://github.com/sponsors/flow')">Donate</button>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Start Sound</span>
+                            <span class="setting-desc">Custom sound when recording starts (.wav)</span>
+                        </div>
+                        <input type="text" id="start-sound-path" class="path-input" placeholder="Path to .wav file">
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Stop Sound</span>
+                            <span class="setting-desc">Custom sound when recording stops (.wav)</span>
+                        </div>
+                        <input type="text" id="stop-sound-path" class="path-input" placeholder="Path to .wav file">
+                    </div>
+                    
+                    <div style="margin-top: 24px; text-align: right;">
+                        <button id="save-settings-btn" class="btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Overlay -->
+    <div id="overlay-pill">
+        <canvas id="visualizer" width="50" height="20" style="display: none;"></canvas>
+        <div class="dot"></div>
+        <div class="status-container">
+            <span id="status-text">Ready</span>
+            <span id="hover-hint">Click or Ctrl+Alt to Record</span>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const isOverlay = window.location.search.includes('mode=overlay');
+        
+        if (isOverlay) {
+            document.body.classList.add('overlay-mode');
+        }
+
+        const pill = document.getElementById('overlay-pill');
+
+        // --- Idle Transparency Logic ---
+        let idleTimer;
+        
+        function resetIdleTimer() {
+            // Remove fade out immediately on interaction
+            pill.classList.remove('fade-out');
+            
+            clearTimeout(idleTimer);
+            // Set timeout for 10 seconds
+            idleTimer = setTimeout(() => {
+                // Only fade out if not recording (optional, but safer to keep visible if recording)
+                // For now, user said "if you didn't use it", so strictly idle.
+                pill.classList.add('fade-out');
+            }, 10000);
+        }
+
+        // Reset timer on any mouse interaction with the pill
+        pill.addEventListener('mouseenter', resetIdleTimer);
+        pill.addEventListener('mousemove', resetIdleTimer);
+        pill.addEventListener('click', resetIdleTimer);
+        
+        // Start timer initially
+        resetIdleTimer();
+        // -------------------------------
+
+        // Mouse click-through logic
+        window.addEventListener('mousemove', event => {
+            let elem = document.elementFromPoint(event.clientX, event.clientY);
+            let isPill = elem && (elem === pill || pill.contains(elem));
+            
+            if (isPill) {
+                ipcRenderer.send('set-ignore-mouse-events', false);
+                resetIdleTimer(); // Also reset here to be safe
+            } else {
+                ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
+            }
+        });
+
+        const statusText = document.getElementById('status-text');
+        const visualizerCanvas = document.getElementById('visualizer');
+        const canvasCtx = visualizerCanvas.getContext('2d');
+        const dot = document.querySelector('.dot');
+
+        // Context Menu
+        pill.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            ipcRenderer.send('show-context-menu');
+        });
+
+        // Click to toggle
+        pill.addEventListener('click', async () => {
+             // We can trigger start/stop via API
+             const res = await fetch('http://localhost:5000/status');
+             const data = await res.json();
+             if (data.is_recording) {
+                 await fetch('http://localhost:5000/stop', { method: 'POST' });
+             } else {
+                 await fetch('http://localhost:5000/start', { method: 'POST' });
+             }
+        });
+
+        // Audio Visualizer Setup
+        let audioContext;
+        let analyser;
+        let microphone;
+        let javascriptNode;
+        let isVisualizerRunning = false;
+
+        async function startVisualizer() {
+            if (isVisualizerRunning) return;
+            try {
+                if (!audioContext) {
+                    audioContext = new AudioContext();
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+                    microphone.connect(analyser);
+                }
+                isVisualizerRunning = true;
+                visualizerCanvas.style.display = 'block';
+                dot.style.display = 'none'; // Hide dot when visualizing
+                drawVisualizer();
+            } catch (e) {
+                console.error("Visualizer error:", e);
+            }
+        }
+
+        function stopVisualizer() {
+            isVisualizerRunning = false;
+            visualizerCanvas.style.display = 'none';
+            dot.style.display = 'block';
+            // We don't close context to keep it ready
+        }
+
+        function drawVisualizer() {
+            if (!isVisualizerRunning) return;
+            requestAnimationFrame(drawVisualizer);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+            const barWidth = (visualizerCanvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+            
+            // Draw a smooth curve instead of bars
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, visualizerCanvas.height / 2);
+
+            for(let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 4; 
+                
+                // Create a sine-like wave effect
+                const y = (visualizerCanvas.height / 2) + Math.sin(i * 0.5 + Date.now() * 0.01) * (barHeight * 0.5);
+                
+                // Simple bar-like wave but connected
+                canvasCtx.lineTo(x, (visualizerCanvas.height / 2) - (barHeight / 2));
+                
+                x += barWidth;
+            }
+            
+            canvasCtx.strokeStyle = '#7c3aed';
+            canvasCtx.lineWidth = 2;
+            canvasCtx.stroke();
+            
+            // Mirror for bottom half to make it look like a sound wave
+            x = 0;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, visualizerCanvas.height / 2);
+             for(let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 4; 
+                canvasCtx.lineTo(x, (visualizerCanvas.height / 2) + (barHeight / 2));
+                x += barWidth;
+            }
+            canvasCtx.stroke();
+        }
+
+        // Simple polling for status (efficient enough for local)
+        // In prod use sockets, but this keeps deps low
+        setInterval(async () => {
+            try {
+                // This assumes we have 'axios' or fetch works
+                const res = await fetch('http://127.0.0.1:5000/status');
+                const data = await res.json();
+                
+                const hoverHint = document.getElementById('hover-hint');
+
+                // PRIORITY 1: Recording/Processing UI must override everything
+                if (data.is_recording) {
+                    pill.classList.remove('processing');
+                    pill.classList.add('recording');
+                    statusText.textContent = "Listening...";
+                    hoverHint.textContent = "Release Ctrl+Alt to Stop"; // Updated for PTT
+                    startVisualizer();
+                    return; // Stop checking other statuses
+                } else if (data.is_processing) {
+                    pill.classList.remove('recording');
+                    pill.classList.add('processing');
+                    statusText.textContent = "Processing...";
+                    hoverHint.textContent = "Please wait...";
+                    stopVisualizer();
+                    return; // Stop checking other statuses
+                }
+
+                // PRIORITY 2: Model Status (only if not recording)
+                if (data.model_status === "loading" || data.model_status === "initializing") {
+                    // Fake it 'til you make it. User wants instant.
+                    pill.classList.remove('recording', 'processing');
+                    statusText.textContent = "Ready"; 
+                    hoverHint.textContent = "Hold Ctrl+Alt to Record";
+                    stopVisualizer();
+                    return;
+                } else if (data.model_status === "downloading") {
+                    // Only show this if we are TRULY downloading from scratch
+                    pill.classList.remove('recording', 'processing');
+                    let progress = data.download_progress || 0;
+                    statusText.textContent = `Downloading... ${progress}%`;
+                    hoverHint.textContent = "Setting up for the first time...";
+                    pill.style.background = `linear-gradient(90deg, rgba(124, 58, 237, 0.5) ${progress}%, rgba(0, 0, 0, 0.4) ${progress}%)`;
+                    stopVisualizer();
+                    return;
+                } else if (data.model_status === "error") {
+                    pill.classList.remove('recording', 'processing');
+                    pill.style.background = ''; // Reset background
+                    statusText.textContent = "Model Error";
+                    hoverHint.textContent = "Check internet/logs & restart";
+                    stopVisualizer();
+                    return;
+                }
+                
+                // PRIORITY 3: Idle/Ready State
+                pill.classList.remove('recording', 'processing');
+                pill.style.background = ''; 
+                statusText.textContent = "Ready";
+                hoverHint.textContent = "Hold Ctrl+Alt to Record"; // Reset hint text
+                stopVisualizer();
+
+            } catch(e) {}
+        }, 500);
+
+        // --- SETTINGS LOGIC ---
+        const navHome = document.getElementById('nav-home');
+        const navSettings = document.getElementById('nav-settings');
+        const homeView = document.getElementById('home-view');
+        const settingsView = document.getElementById('settings-view');
+        
+        const featuresCard = document.getElementById('features-card');
+        
+        const smartPolishToggle = document.getElementById('smart-polish-toggle');
+        const genZToggle = document.getElementById('gen-z-toggle');
+        const startSoundPath = document.getElementById('start-sound-path');
+        const stopSoundPath = document.getElementById('stop-sound-path');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+
+        // Navigation
+        function showHome() {
+            homeView.style.display = 'block';
+            settingsView.style.display = 'none';
+            navHome.classList.add('active');
+            navSettings.classList.remove('active');
+        }
+
+        function showSettings() {
+            homeView.style.display = 'none';
+            settingsView.style.display = 'block';
+            navHome.classList.remove('active');
+            navSettings.classList.add('active');
+            loadConfig(); // Refresh config when entering settings
+        }
+
+        navHome.addEventListener('click', showHome);
+        navSettings.addEventListener('click', showSettings);
+
+        // Load Config
+        async function loadConfig() {
+            try {
+                const configRes = await fetch('http://localhost:5000/config');
+                const config = await configRes.json();
+                
+                smartPolishToggle.checked = config.smart_polish || false;
+                genZToggle.checked = config.gen_z_mode || false;
+                startSoundPath.value = config.sound_start_path || "";
+                stopSoundPath.value = config.sound_stop_path || "";
+                
+            } catch (e) {
+                console.error("Failed to load config", e);
+            }
+        }
+
+
+        // Save Settings
+        saveSettingsBtn.addEventListener('click', async () => {
+            saveSettingsBtn.textContent = "Saving...";
+            saveSettingsBtn.disabled = true;
+            
+            const newConfig = {
+                smart_polish: smartPolishToggle.checked,
+                gen_z_mode: genZToggle.checked,
+                sound_start_path: startSoundPath.value.trim(),
+                sound_stop_path: stopSoundPath.value.trim()
+            };
+            
+            try {
+                const res = await fetch('http://localhost:5000/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    saveSettingsBtn.textContent = "Saved!";
+                    setTimeout(() => {
+                        saveSettingsBtn.textContent = "Save Changes";
+                        saveSettingsBtn.disabled = false;
+                    }, 1500);
+                } else {
+                    saveSettingsBtn.textContent = "Error";
+                    alert("Failed to save: " + data.message);
+                    saveSettingsBtn.disabled = false;
+                }
+            } catch (e) {
+                console.error(e);
+                saveSettingsBtn.textContent = "Error";
+                saveSettingsBtn.disabled = false;
+            }
+        });
+
+        // Initial Load
+        loadConfig();
+    </script>
+</body>
+</html>

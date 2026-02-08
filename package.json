@@ -1,0 +1,73 @@
+{
+  "name": "pace",
+  "productName": "Pace",
+  "version": "1.0.0",
+  "description": "Minimal AI Transcription App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-python": "pyinstaller --noconfirm --onedir --console --distpath python_dist --name \"server\" --add-data \"venv/Lib/site-packages/faster_whisper;faster_whisper\" --clean server.py",
+    "dist": "npm run build-python && electron-builder"
+  },
+  "build": {
+    "appId": "com.pace.app",
+    "productName": "Pace",
+    "directories": {
+      "output": "distribution"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico",
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "Pace-Setup.exe"
+    },
+    "files": [
+      "**/*",
+      "!python_dist",
+      "!venv",
+      "!release",
+      "!build",
+      "!builder-cache",
+      "!scripts",
+      "!*.py",
+      "!*.spec",
+      "!*.log",
+      "!history.json",
+      "!requirements.txt"
+    ],
+    "extraResources": [
+      {
+        "from": "python_dist/server",
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
+      },
+      "logo.png",
+      "icon.ico"
+    ]
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+ "dependencies": {
+    "axios": "^1.6.0",
+    "electron-updater": "^6.1.8"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "YourGitHubUsername",
+      "repo": "pace"
+    }
+  ]
+}
