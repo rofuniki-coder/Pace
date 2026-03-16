@@ -13,7 +13,7 @@ from faster_whisper import WhisperModel
 import hashlib
 import ctypes
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from comtypes import CLSCTX_ALL
+from comtypes import CLSCTX_ALL, CoInitialize, CoUninitialize
 
 # --- CONFIG ---
 SAMPLE_RATE = 16000
@@ -35,6 +35,7 @@ class PaceEngine:
         self.last_typed_text = ""
         self.last_typed_time = 0
         self.model_size = DEFAULT_MODEL_SIZE
+        self.pre_mute_state = False
         
         # Audio Feedback
         pygame.mixer.init()
@@ -47,27 +48,28 @@ class PaceEngine:
             self.start_snd = self.stop_snd = None
 
         self.model = self._load_model()
-        self.volume_interface = self._init_volume()
-        self.pre_mute_state = False
-
-    def _init_volume(self):
-        try:
-            devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            return ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
-        except:
-            return None
 
     def mute_pc(self, mute=True):
-        if not self.volume_interface: return
+        if sys.platform != 'win32': return
+        
         try:
+            # COM must be initialized per thread
+            CoInitialize()
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
+            
             if mute:
-                self.pre_mute_state = self.volume_interface.GetMute()
-                self.volume_interface.SetMute(1, None)
+                self.pre_mute_state = volume.GetMute()
+                volume.SetMute(1, None)
+                print("DEBUG: PC Muted", file=sys.stderr)
             else:
-                self.volume_interface.SetMute(self.pre_mute_state, None)
-        except:
-            pass
+                volume.SetMute(self.pre_mute_state, None)
+                print("DEBUG: PC Unmuted", file=sys.stderr)
+            
+            CoUninitialize()
+        except Exception as e:
+            print(f"DEBUG: Mute failed: {e}", file=sys.stderr)
 
     def _load_model(self):
         self.log("status", {"text": f"Pace AI Warming Up ({self.model_size})..."})
