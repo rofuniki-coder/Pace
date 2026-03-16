@@ -31,11 +31,12 @@ if (!gotTheLock) {
 
 function createWindow() {
   // Kill any previous python processes running engine.py before starting
+  // Use windowsHide to prevent terminal flicker
   try {
     if (process.platform === 'win32') {
-      execSync('taskkill /F /IM python.exe /FI "WINDOWTITLE eq PaceEngine*" /T', { stdio: 'ignore' });
-      // Also try to kill any python process that might be a zombie
-      execSync('wmic process where "commandline like \'%engine.py%\'" delete', { stdio: 'ignore' });
+      const { spawnSync } = require('child_process');
+      spawnSync('taskkill', ['/F', '/IM', 'python.exe', '/FI', 'WINDOWTITLE eq PaceEngine*', '/T'], { windowsHide: true });
+      spawnSync('wmic', ['process', 'where', "commandline like '%engine.py%'", 'delete'], { windowsHide: true });
     }
   } catch (e) {}
 
@@ -155,8 +156,10 @@ function startPythonEngine() {
   if (pythonProcess) return;
 
   console.log('Spawning PaceEngine process...');
+  // Use windowsHide: true to prevent terminal window from popping up
   pythonProcess = spawn('python', [path.join(__dirname, 'engine.py')], {
-    stdio: ['pipe', 'pipe', 'inherit']
+    stdio: ['pipe', 'pipe', 'inherit'],
+    windowsHide: true
   });
 
   pythonProcess.stdout.on('data', (data) => {
@@ -178,10 +181,13 @@ function startPythonEngine() {
     });
   });
 
-  pythonProcess.on('exit', () => {
+  pythonProcess.on('exit', (code) => {
+    console.log(`Python engine exited with code ${code}`);
     pythonProcess = null;
     if (!app.isQuitting) {
-      setTimeout(startPythonEngine, 1000); // Auto-restart if crashed
+      // If it crashes too fast, wait longer before restarting to prevent spam
+      const delay = 3000; 
+      setTimeout(startPythonEngine, delay);
     }
   });
 }

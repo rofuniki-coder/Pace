@@ -181,9 +181,20 @@ def command_monitor(engine):
 
 def suicide_watch():
     # Kill ourselves if Electron (our parent) dies
+    parent_pid = os.getppid()
     while True:
-        if os.getppid() == 1: # Parent is gone (adopted by init on POSIX, or just orphaned)
-            os._exit(0)
+        try:
+            if sys.platform == 'win32':
+                # Use Windows tasklist to check if parent is still alive
+                # This is more robust than getppid() == 1 on Windows
+                process_check = os.popen(f'tasklist /FI "PID eq {parent_pid}"').read()
+                if str(parent_pid) not in process_check:
+                    os._exit(0)
+            else:
+                if os.getppid() != parent_pid:
+                    os._exit(0)
+        except:
+            pass
         time.sleep(2)
 
 if __name__ == "__main__":
