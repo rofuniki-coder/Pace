@@ -55,8 +55,13 @@ class PaceEngine:
         try:
             # COM must be initialized per thread
             CoInitialize()
-            devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            from pycaw.pycaw import MMDeviceEnumerator
+            
+            enumerator = MMDeviceEnumerator()
+            # eRender=0, eMultimedia=1 (standard for speakers)
+            device = enumerator.GetDefaultAudioEndpoint(0, 1)
+            
+            interface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
             volume = ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
             
             if mute:
