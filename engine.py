@@ -12,11 +12,13 @@ import pyperclip
 from faster_whisper import WhisperModel
 import hashlib
 import ctypes
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from comtypes import CLSCTX_ALL
 
 # --- CONFIG ---
 SAMPLE_RATE = 16000
 CHUNK_SIZE = 1024
-MODEL_SIZE = "tiny.en"
+DEFAULT_MODEL_SIZE = "tiny.en"
 CONSOLE_TITLE = "PaceEngine"
 
 class PaceEngine:
@@ -32,6 +34,7 @@ class PaceEngine:
         self.last_sound_time = 0
         self.last_typed_text = ""
         self.last_typed_time = 0
+        self.model_size = DEFAULT_MODEL_SIZE
         
         # Audio Feedback
         pygame.mixer.init()
@@ -44,15 +47,51 @@ class PaceEngine:
             self.start_snd = self.stop_snd = None
 
         self.model = self._load_model()
+        self.volume_interface = self._init_volume()
+        self.pre_mute_state = False
+
+    def _init_volume(self):
+        try:
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            return ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
+        except:
+            return None
+
+    def mute_pc(self, mute=True):
+        if not self.volume_interface: return
+        try:
+            if mute:
+                self.pre_mute_state = self.volume_interface.GetMute()
+                self.volume_interface.SetMute(1, None)
+            else:
+                self.volume_interface.SetMute(self.pre_mute_state, None)
+        except:
+            pass
 
     def _load_model(self):
-        self.log("status", {"text": "Pace AI Warming Up..."})
-        path = os.path.join(os.path.dirname(__file__), "models")
-        model = WhisperModel(MODEL_SIZE, device="cpu", compute_type="int8", download_root=path, cpu_threads=4)
+        self.log("status", {"text": f"Pace AI Warming Up ({self.model_size})..."})
+        
+        # Use a persistent path for models (appdata on windows)
+        if sys.platform == 'win32':
+            appdata = os.environ.get('APPDATA', os.path.expanduser('~'))
+            path = os.path.join(appdata, "Pace", "models")
+        else:
+            path = os.path.join(os.path.expanduser('~'), ".pace", "models")
+            
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
+            
+        model = WhisperModel(self.model_size, device="cpu", compute_type="int8", download_root=path, cpu_threads=4)
         # Warmup
         list(model.transcribe(np.zeros(16000, dtype=np.float32), beam_size=1))
-        self.log("engine_ready", {"model": MODEL_SIZE})
+        self.log("engine_ready", {"model": self.model_size})
         return model
+
+    def switch_model(self, size):
+        if size == self.model_size: return
+        self.model_size = size
+        self.model = self._load_model()
 
     def log(self, msg_type, data):
         print(json.dumps({"type": msg_type, **data}))
@@ -76,6 +115,7 @@ class PaceEngine:
             self.is_recording = True
             self.log("status", {"isRecording": True, "sessionId": session_id})
             self.play_snd(self.start_snd)
+            self.mute_pc(True)
 
             # Fresh stream for every session
             stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=SAMPLE_RATE, input=True, frames_per_buffer=CHUNK_SIZE)
@@ -94,6 +134,7 @@ class PaceEngine:
             # STOPPING
             stream.stop_stream()
             stream.close()
+            self.mute_pc(False)
             self.play_snd(self.stop_snd)
             self.log("status", {"isRecording": False})
 
@@ -173,11 +214,15 @@ def hotkey_monitor(engine):
 
 def command_monitor(engine):
     for line in sys.stdin:
-        if line.strip() == "toggle":
+        cmd = line.strip()
+        if cmd == "toggle":
             if not engine.is_recording:
                 threading.Thread(target=engine.run_session, daemon=True).start()
             else:
                 engine.is_recording = False
+        elif cmd.startswith("model:"):
+            size = cmd.split(":")[1]
+            threading.Thread(target=engine.switch_model, args=(size,), daemon=True).start()
 
 def suicide_watch():
     # Kill ourselves if Electron (our parent) dies

@@ -9,6 +9,7 @@ let tray = null;
 let transcriptions = [];
 let lastTranscriptionId = null;
 let hideTimeout = null;
+let currentModel = "tiny.en";
 
 const VERSION = "1.0.0";
 const GITHUB_REPO = "https://github.com/rofuniki-coder/Pace";
@@ -74,6 +75,24 @@ function createWindow() {
     const menu = Menu.buildFromTemplate([
       { label: 'Last 10 Transcriptions', submenu: historySubmenu },
       { type: 'separator' },
+      {
+        label: 'Whisper Model',
+        submenu: [
+          {
+            label: 'Tiny (Fastest)',
+            type: 'radio',
+            checked: currentModel === 'tiny.en',
+            click: () => switchModel('tiny.en')
+          },
+          {
+            label: 'Medium (Accurate)',
+            type: 'radio',
+            checked: currentModel === 'medium.en',
+            click: () => switchModel('medium.en')
+          }
+        ]
+      },
+      { type: 'separator' },
       { 
         label: 'Hide for 1 Hour', 
         click: () => {
@@ -108,6 +127,13 @@ function createWindow() {
     if (pythonProcess) pythonProcess.stdin.write('toggle\n');
   });
 
+  function switchModel(size) {
+    currentModel = size;
+    if (pythonProcess) {
+      pythonProcess.stdin.write(`model:${size}\n`);
+    }
+  }
+
   ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
     if (mainWindow) mainWindow.setIgnoreMouseEvents(ignore, options);
   });
@@ -122,6 +148,24 @@ function createTray() {
   
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Pace v' + VERSION, enabled: false },
+    { type: 'separator' },
+    {
+      label: 'Whisper Model',
+      submenu: [
+        {
+          label: 'Tiny (Fastest)',
+          type: 'radio',
+          checked: currentModel === 'tiny.en',
+          click: () => switchModel('tiny.en')
+        },
+        {
+          label: 'Medium (Accurate)',
+          type: 'radio',
+          checked: currentModel === 'medium.en',
+          click: () => switchModel('medium.en')
+        }
+      ]
+    },
     { type: 'separator' },
     { label: 'Show App', click: () => { if (mainWindow) mainWindow.show(); } },
     { label: 'Hide for 1 Hour', click: () => {
@@ -156,10 +200,24 @@ function startPythonEngine() {
   if (pythonProcess) return;
 
   console.log('Spawning PaceEngine process...');
+  
+  // In packaged apps, we need to point to the unpacked version of engine.py
+  // electron-builder moves asarUnpack files to 'app.asar.unpacked'
+  let enginePath = path.join(__dirname, 'engine.py');
+  if (app.isPackaged) {
+    enginePath = enginePath.replace('app.asar', 'app.asar.unpacked');
+  }
+
+  console.log('Engine path:', enginePath);
+
   // Use windowsHide: true to prevent terminal window from popping up
-  pythonProcess = spawn('python', [path.join(__dirname, 'engine.py')], {
-    stdio: ['pipe', 'pipe', 'inherit'],
+  pythonProcess = spawn('python', [enginePath], {
+    stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true
+  });
+
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`Python Engine Error: ${data}`);
   });
 
   pythonProcess.stdout.on('data', (data) => {
@@ -179,6 +237,16 @@ function startPythonEngine() {
         if (mainWindow) mainWindow.webContents.send('engine-msg', json);
       } catch (e) {}
     });
+  });
+
+  pythonProcess.on('error', (err) => {
+    console.error('Failed to start Python engine:', err);
+    if (mainWindow) {
+      mainWindow.webContents.send('engine-msg', { 
+        type: 'status', 
+        text: 'Error: Python not found. Please install Python and add it to your PATH.' 
+      });
+    }
   });
 
   pythonProcess.on('exit', (code) => {
