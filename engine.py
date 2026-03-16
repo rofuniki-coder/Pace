@@ -52,29 +52,23 @@ class PaceEngine:
     def mute_pc(self, mute=True):
         if sys.platform != 'win32': return
         
+        # --- NEW WAY: Hardware Virtual Keys ---
+        # 0xAD is VK_VOLUME_MUTE. We simulate a physical key press.
+        # This bypasses all library/COM/object errors because it's at the OS input level.
+        VK_VOLUME_MUTE = 0xAD
+        
         try:
-            # COM must be initialized per thread
-            CoInitialize()
-            from pycaw.pycaw import MMDeviceEnumerator
-            
-            enumerator = MMDeviceEnumerator()
-            # eRender=0, eMultimedia=1 (standard for speakers)
-            device = enumerator.GetDefaultAudioEndpoint(0, 1)
-            
-            interface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
+            # We use keybd_event to send the MUTE command directly to the Windows shell
+            # This is exactly what happens when you press the 'Mute' button on your keyboard.
+            ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0) # Press
+            ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0) # Release
             
             if mute:
-                self.pre_mute_state = volume.GetMute()
-                volume.SetMute(1, None)
-                print("DEBUG: PC Muted", file=sys.stderr)
+                print("DEBUG: Hardware Mute Toggled (ON)", file=sys.stderr)
             else:
-                volume.SetMute(self.pre_mute_state, None)
-                print("DEBUG: PC Unmuted", file=sys.stderr)
-            
-            CoUninitialize()
+                print("DEBUG: Hardware Mute Toggled (OFF)", file=sys.stderr)
         except Exception as e:
-            print(f"DEBUG: Mute failed: {e}", file=sys.stderr)
+            print(f"DEBUG: Hardware Mute failed: {e}", file=sys.stderr)
 
     def _load_model(self):
         self.log("status", {"text": f"Pace AI Warming Up ({self.model_size})..."})
