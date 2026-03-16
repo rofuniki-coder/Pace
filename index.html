@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .pill-container {
+      width: fit-content;
+      height: 22px;
+      background: rgba(10, 10, 10, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      box-shadow: none;
+      -webkit-app-region: no-drag;
+      backdrop-filter: blur(12px);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      overflow: hidden;
+      opacity: 0.4;
+      cursor: pointer;
+      position: relative;
+    }
+    .pill-container:hover {
+      opacity: 0.9;
+    }
+    .pill-container.active {
+      height: 30px;
+      padding: 0 10px;
+      background: rgba(5, 5, 5, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      opacity: 1;
+    }
+    .content-wrapper {
+      display: flex;
+      align-items: center;
+      opacity: 1;
+      transition: all 0.3s ease;
+    }
+    .mic-svg {
+      width: 10px;
+      height: 10px;
+      fill: #fff;
+      margin-right: 3px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .active .mic-svg {
+      width: 12px;
+      height: 12px;
+      fill: #ff3b30;
+      transform: scale(1.1);
+    }
+    .visualizer {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 10px;
+      opacity: 0.5;
+      transition: all 0.3s ease;
+    }
+    .active .visualizer {
+      opacity: 1;
+      gap: 3px;
+    }
+    .bar {
+      width: 3px;
+      height: 2px;
+      background: #fff;
+      border-radius: 1.5px;
+      transition: height 0.08s ease;
+    }
+    .pill-container::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      opacity: 0;
+    }
+    .pill-container.active::after {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="pill" class="pill-container">
+    <div class="content-wrapper">
+      <svg id="mic-icon" class="mic-svg" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+      <div id="visualizer" class="visualizer">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const pill = document.getElementById('pill');
+    const bars = document.querySelectorAll('.bar');
+    let isRecording = false;
+    let targetLevel = 0;
+    let currentLevel = 0;
+
+    ipcRenderer.on('engine-msg', (event, data) => {
+      if (data.type === 'status') {
+        if (data.isRecording !== undefined) {
+          isRecording = data.isRecording;
+          if (isRecording) {
+            pill.classList.add('active');
+          } else {
+            pill.classList.remove('active');
+            targetLevel = 0;
+          }
+        }
+      } else if (data.type === 'level') {
+        targetLevel = data.level;
+      }
+    });
+
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      ipcRenderer.send('show-context-menu');
+    });
+
+    pill.addEventListener('mouseenter', () => {
+      ipcRenderer.send('set-ignore-mouse-events', false);
+    });
+    pill.addEventListener('mouseleave', () => {
+      if (!isRecording) {
+        ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
+      }
+    });
+
+    let lastClick = 0;
+    pill.addEventListener('click', () => {
+      const now = Date.now();
+      if (now - lastClick < 500) return;
+      lastClick = now;
+      ipcRenderer.send('toggle-recording');
+    });
+
+    function animate() {
+      currentLevel = currentLevel * 0.8 + targetLevel * 0.2;
+      if (isRecording) {
+        bars.forEach((bar, i) => {
+          const wave = Math.sin(Date.now() / 200 + i * 0.6) * 0.2 + 0.8;
+          const h = 4 + (currentLevel * 15 * wave);
+          bar.style.height = `${Math.min(h, 18)}px`;
+        });
+      } else {
+        bars.forEach(bar => bar.style.height = '3px');
+      }
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>

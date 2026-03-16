@@ -1,0 +1,5 @@
+faster-whisper
+PyAudio
+numpy
+keyboard
+pygame

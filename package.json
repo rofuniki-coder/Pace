@@ -1,0 +1,32 @@
+{
+  "name": "pace",
+  "version": "1.0.0",
+  "description": "Keep in pace with your words - High performance STT desktop app.",
+  "main": "main.js",
+  "build": {
+    "appId": "com.pace.app",
+    "productName": "Pace",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "image.png",
+      "target": [
+        "portable"
+      ]
+    },
+    "files": [
+      "**/*",
+      "!dist",
+      "!models"
+    ]
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
