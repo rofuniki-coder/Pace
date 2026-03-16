@@ -12,13 +12,30 @@
     "win": {
       "icon": "image.png",
       "target": [
-        "portable"
+        "nsis"
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pace",
+      "uninstallDisplayName": "Pace STT",
+      "deleteAppDataOnUninstall": false
+    },
+    "asar": true,
+    "asarUnpack": [
+      "engine.py",
+      "start.mp3",
+      "stop.mp3",
+      "image.png"
+    ],
     "files": [
       "**/*",
       "!dist",
-      "!models"
+      "!models",
+      "!.git"
     ]
   },
   "scripts": {
