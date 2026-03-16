@@ -8,8 +8,8 @@
 
 <img src="https://img.shields.io/github/forks/rofuniki-coder/Pace?style=for-the-badge&logo=github" />
 
-<img src="https://img.shields.io/github/license/rofuniki-coder/Pace?style=for-the-badge" />
-
+[<img src="https://img.shields.io/github/license/rofuniki-coder/Pace?style=for-the-badge" />
+](https://img.shields.io/github/license/rofuniki-coder/Pace?style=for-the-badge&color=blue)
 <img src="https://img.shields.io/github/repo-size/rofuniki-coder/Pace?style=for-the-badge" />
 
 <img src="https://img.shields.io/github/languages/top/rofuniki-coder/Pace?style=for-the-badge" />
