@@ -3,3 +3,6 @@ PyAudio
 numpy
 keyboard
 pygame
+pycaw
+comtypes
+pyperclip

@@ -213,7 +213,8 @@ function startPythonEngine() {
   // Use windowsHide: true to prevent terminal window from popping up
   pythonProcess = spawn('python', [enginePath], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    windowsHide: true
+    windowsHide: true,
+    env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
   });
 
   pythonProcess.stderr.on('data', (data) => {
