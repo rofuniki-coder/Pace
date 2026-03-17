@@ -29,9 +29,7 @@ class PaceEngine:
 
         self.lock = threading.Lock()
         self.is_recording = False
-        print("DEBUG: Initializing PyAudio...", file=sys.stderr)
         self.pa = pyaudio.PyAudio()
-        print("DEBUG: PyAudio initialized.", file=sys.stderr)
         self.last_audio_hash = None
         self.last_sound_time = 0
         self.last_typed_text = ""
@@ -40,16 +38,13 @@ class PaceEngine:
         self.pre_mute_state = False
         
         # Audio Feedback
-        print("DEBUG: Initializing pygame mixer...", file=sys.stderr)
         pygame.mixer.init()
         try:
             # Use relative paths for portability and privacy
             base_dir = os.path.dirname(os.path.abspath(__file__))
             self.start_snd = pygame.mixer.Sound(os.path.join(base_dir, "start.mp3"))
             self.stop_snd = pygame.mixer.Sound(os.path.join(base_dir, "stop.mp3"))
-            print("DEBUG: Pygame mixer and sounds loaded.", file=sys.stderr)
-        except Exception as e:
-            print(f"DEBUG: Pygame load failed: {e}", file=sys.stderr)
+        except:
             self.start_snd = self.stop_snd = None
 
         self.model = self._load_model()
@@ -88,14 +83,10 @@ class PaceEngine:
             
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
-        
-        print(f"DEBUG: Loading Whisper model from {path}...", file=sys.stderr)
+            
         model = WhisperModel(self.model_size, device="cpu", compute_type="int8", download_root=path, cpu_threads=4)
-        print("DEBUG: Whisper model object created.", file=sys.stderr)
         # Warmup
-        print("DEBUG: Warming up model...", file=sys.stderr)
         list(model.transcribe(np.zeros(16000, dtype=np.float32), beam_size=1))
-        print("DEBUG: Model warmup complete.", file=sys.stderr)
         self.log("engine_ready", {"model": self.model_size})
         return model
 
