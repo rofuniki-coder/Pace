@@ -285,7 +285,7 @@ Right-click the pill to:
 # ⭐ Star History
 
 <p align="center">
-<a href="https://star-history.com/#rofuniki-coder/Pace&Date">
+<a href="https://www.star-history.com/?repos=rofuniki-coder%2FPace&type=date&legend=top-left">
 <img src="https://api.star-history.com/svg?repos=rofuniki-coder/Pace&type=Date" width="600"/>
 </a>
 </p>
