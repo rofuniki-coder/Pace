@@ -29,7 +29,9 @@ class PaceEngine:
 
         self.lock = threading.Lock()
         self.is_recording = False
+        print("DEBUG: Initializing PyAudio...", file=sys.stderr)
         self.pa = pyaudio.PyAudio()
+        print("DEBUG: PyAudio initialized.", file=sys.stderr)
         self.last_audio_hash = None
         self.last_sound_time = 0
         self.last_typed_text = ""
@@ -38,13 +40,16 @@ class PaceEngine:
         self.pre_mute_state = False
         
         # Audio Feedback
+        print("DEBUG: Initializing pygame mixer...", file=sys.stderr)
         pygame.mixer.init()
         try:
             # Use relative paths for portability and privacy
             base_dir = os.path.dirname(os.path.abspath(__file__))
             self.start_snd = pygame.mixer.Sound(os.path.join(base_dir, "start.mp3"))
             self.stop_snd = pygame.mixer.Sound(os.path.join(base_dir, "stop.mp3"))
-        except:
+            print("DEBUG: Pygame mixer and sounds loaded.", file=sys.stderr)
+        except Exception as e:
+            print(f"DEBUG: Pygame load failed: {e}", file=sys.stderr)
             self.start_snd = self.stop_snd = None
 
         self.model = self._load_model()
@@ -52,23 +57,24 @@ class PaceEngine:
     def mute_pc(self, mute=True):
         if sys.platform != 'win32': return
         
-        # --- NEW WAY: Hardware Virtual Keys ---
-        # 0xAD is VK_VOLUME_MUTE. We simulate a physical key press.
-        # This bypasses all library/COM/object errors because it's at the OS input level.
-        VK_VOLUME_MUTE = 0xAD
-        
         try:
-            # We use keybd_event to send the MUTE command directly to the Windows shell
-            # This is exactly what happens when you press the 'Mute' button on your keyboard.
-            ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0) # Press
-            ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0) # Release
+            CoInitialize()
+            speakers = AudioUtilities.GetSpeakers()
+            if speakers:
+                volume = speakers.EndpointVolume
+                # Absolute mute
+                volume.SetMute(1 if mute else 0, None)
+            # state = "ON" if mute else "OFF"
+            # print(f"DEBUG: Absolute Mute (pycaw): {state}", file=sys.stderr)
             
-            if mute:
-                print("DEBUG: Hardware Mute Toggled (ON)", file=sys.stderr)
-            else:
-                print("DEBUG: Hardware Mute Toggled (OFF)", file=sys.stderr)
+            # Clean up COM
+            CoUninitialize()
         except Exception as e:
-            print(f"DEBUG: Hardware Mute failed: {e}", file=sys.stderr)
+            print(f"DEBUG: Absolute Mute failed: {e}", file=sys.stderr)
+            # Fallback to older toggle way if pycaw fails
+            VK_VOLUME_MUTE = 0xAD
+            ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
 
     def _load_model(self):
         self.log("status", {"text": f"Pace AI Warming Up ({self.model_size})..."})
@@ -82,10 +88,14 @@ class PaceEngine:
             
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
-            
+        
+        print(f"DEBUG: Loading Whisper model from {path}...", file=sys.stderr)
         model = WhisperModel(self.model_size, device="cpu", compute_type="int8", download_root=path, cpu_threads=4)
+        print("DEBUG: Whisper model object created.", file=sys.stderr)
         # Warmup
+        print("DEBUG: Warming up model...", file=sys.stderr)
         list(model.transcribe(np.zeros(16000, dtype=np.float32), beam_size=1))
+        print("DEBUG: Model warmup complete.", file=sys.stderr)
         self.log("engine_ready", {"model": self.model_size})
         return model
 

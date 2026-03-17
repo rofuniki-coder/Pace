@@ -220,8 +220,13 @@ function startPythonEngine() {
     console.error(`Python Engine Error: ${data}`);
   });
 
+  let stdoutBuffer = '';
   pythonProcess.stdout.on('data', (data) => {
-    data.toString().split('\n').forEach(line => {
+    stdoutBuffer += data.toString();
+    let lines = stdoutBuffer.split('\n');
+    stdoutBuffer = lines.pop(); // Keep the last incomplete line
+
+    lines.forEach(line => {
       if (!line.trim()) return;
       try {
         const json = JSON.parse(line);
@@ -235,7 +240,9 @@ function startPythonEngine() {
         }
 
         if (mainWindow) mainWindow.webContents.send('engine-msg', json);
-      } catch (e) {}
+      } catch (e) {
+        console.error('JSON Parse Error:', e, 'on line:', line);
+      }
     });
   });
 

@@ -3,3 +3,4 @@ PyAudio
 numpy
 keyboard
 pygame
+pyperclip
